@@ -2,6 +2,7 @@ const main = () => {
   // standard global constiables
   let container, scene, camera, renderer, controls, light;
 
+  //TODO: use three built in function
   const toRadians = (angle) => {
     return angle * (Math.PI / 180);
   };
@@ -10,12 +11,13 @@ const main = () => {
     const x = radius * Math.cos(toRadians(theta)) * Math.sin(toRadians(phi));
     const y = radius * Math.sin(toRadians(theta)) * Math.sin(toRadians(phi));
     const z = radius * Math.cos(toRadians(phi));
-    return [x, y, z];
+    return new THREE.Vector3(x, y, z);
   };
 
   // custom global variables
-  let x = 45,
-    y = 45,
+  //TODO: work out why origin isnt 0,0
+  let x = -90,
+    y = -90,
     z = 100;
   let xyz = getPointCoords(x, y, z);
   let animateClicked = false;
@@ -24,8 +26,8 @@ const main = () => {
     // SCENE
     scene = new THREE.Scene();
     // CAMERA
-    const SCREEN_WIDTH = 800, 
-      SCREEN_HEIGHT = 800; 
+    const SCREEN_WIDTH = 800,
+      SCREEN_HEIGHT = 800;
     const VIEW_ANGLE = 45,
       ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT,
       NEAR = 0.1,
@@ -52,7 +54,7 @@ const main = () => {
 
     //   LIGHT
     light = new THREE.PointLight(0xffffff);
-    light.position.set(xyz[0], xyz[1], xyz[2] + 75);
+    light.position.set(xyz.x, xyz.y, xyz.z + 75);
     scene.add(light);
 
     const sphereRadius = 100;
@@ -103,16 +105,26 @@ const main = () => {
     drawArc(createArc(E, W1), new THREE.Color(0x00ff00));
     drawArc(createArc(E, W2), new THREE.Color(0x00ff00));
 
-    // point
-    const pointGeometry = new THREE.SphereGeometry(2, 8, 8);
-    const pointMaterial = new THREE.MeshBasicMaterial({ color: '#680cea' });
+    // arrow line
+    arrowLineGeometry = new THREE.Geometry();
+    arrowLineGeometry.vertices = [new THREE.Vector3(0, 0, 0), xyz];
+    const arrowLineMaterial = new THREE.LineBasicMaterial({
+      color: 0x00aaff,
+      linewidth: 5
+    });
+    const arrowLine = new THREE.Line(arrowLineGeometry, arrowLineMaterial);
+
+    // arrow head
+    const pointGeometry = new THREE.ConeGeometry(8, 16, 4);
+    const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
     point = new THREE.Mesh(pointGeometry, pointMaterial);
 
-    point.position.x = xyz[0];
-    point.position.y = xyz[1];
-    point.position.z = xyz[2];
+    point.position.x = xyz.x;
+    point.position.y = xyz.y;
+    point.position.z = xyz.z;
 
     scene.add(point);
+    scene.add(arrowLine);
   };
 
   // functions to create and draw great circles on a sphere
@@ -143,14 +155,20 @@ const main = () => {
 
   const animate = () => {
     if (animateClicked) {
-      x++;
-      y++;
+      x += 0.5;
+      y += 0.5;
     }
+    arrowLineGeometry.verticesNeedUpdate = true;
+
+    arrowLineGeometry.vertices = [new THREE.Vector3(0, 0, 0), xyz];
+
     xyz = getPointCoords(x, y, z);
-    point.position.x = xyz[0];
-    point.position.y = xyz[1];
-    point.position.z = xyz[2];
-    light.position.set(xyz[0], xyz[1], xyz[2] + 75);
+    point.position.x = xyz.x;
+    point.position.y = xyz.y;
+    point.position.z = xyz.z;
+    point.rotation.set(0.0,THREE.Math.degToRad(y) + Math.PI / 2, THREE.Math.degToRad(x) + Math.PI / 2);
+
+    light.position.set(xyz.x, xyz.y, xyz.z + 75);
 
     requestAnimationFrame(animate);
     render();
